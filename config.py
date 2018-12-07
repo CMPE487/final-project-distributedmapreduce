@@ -14,7 +14,8 @@ def get_ip():
 
 
 SELF_IP = get_ip()
-DISCOVERY_PORT = 5000  #TCP
+DISCOVERY_PORT = 5000  #UDP
+OFFER_PORT = 5001 #UDP
 DELIVERY_PORT = 5001  #TCP
 OFFER_TIMEOUT= 5  #Seconds
 SUBNET = ".".join(SELF_IP.split('.')[:3])
