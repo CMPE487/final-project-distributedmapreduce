@@ -6,6 +6,7 @@ import threading
 import hashlib
 import select
 from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT
+import math
 
 class OfferMaker:
     def __init__(self,ip,quant):
@@ -13,13 +14,29 @@ class OfferMaker:
         self.quant = quant
         self.limit = None
         self.offset = None
+        self.response = None
 
 class Offer:
-    def __init__(self,filename,required_quant):
+    def __init__(self, filename, required_quant, num_operations):
         self.filename = filename
         self.required_quant = required_quant
+        self.num_operations = num_operations
         self.md5 = self.get_md5()
+        self.content = self.get_script_content()
         self.offer_takers = []
+
+
+    def set_distributions(self):
+        quants = [taker.quant for taker in self.offer_takers]
+        assigned_ops = [math.ceil((self.num_operations/ sum(quants)) * quant) for quant in quants]
+        curr_offset = 0
+        for i in range(len(self.offer_takers)):
+            taker = self.offer_takers[i]
+            taker.offset= curr_offset
+            taker.limit = assigned_ops[i]
+            curr_offset += taker.limit
+        excess = sum(assigned_ops) - self.num_operations
+        self.offer_takers[-1].limit -= excess
 
     def is_satisfied(self):
         available_quant = sum([maker.quant for maker in self.offer_takers])
@@ -52,7 +69,6 @@ class Offer:
         finally:
             script.close()
 
-
 class Client:
     def __init__(self):
         self.loop = asyncio.get_running_loop()
@@ -72,10 +88,10 @@ class Client:
             self.available_servers.pop(ip, None)
         #TODO update UI
 
-    def broadcast_script_offer(self, filename, required_quant):
-        asyncio.run(self.start_offer_broadcast(filename, required_quant))
+    def broadcast_script_offer(self, filename, required_quant, num_operations):
+        asyncio.run(self.start_offer_broadcast(filename, required_quant, num_operations))
 
-    async def start_offer_broadcast(self, filename, required_quant):
+    async def start_offer_broadcast(self, filename, required_quant, num_operations):
         self.loop = asyncio.get_event_loop()
         self.offer = Offer(filename, required_quant)
         promises = []
@@ -93,6 +109,7 @@ class Client:
             #TODO Display error in UI
             self.offer = None
             return
+
     def send_script(self):
         asyncio.run(self.start_script_protocol())
 
@@ -123,6 +140,7 @@ class OfferClientProtocol(asyncio.Protocol):
             return
         elif status == "OK":
             self.offer.offer_takers.append(OfferMaker(ip,time_quant))
+        self.conn_lost.set_result(True)
 
 class DiscoveryListener(threading.Thread):
     def __init__(self, discovery_cb):
@@ -141,3 +159,31 @@ class DiscoveryListener(threading.Thread):
             status,received_from, quant = msg.split('|')
             quant = int(quant)
             self.discovery_cb(status,received_from, quant)
+
+class OfferScriptProtocol(asyncio.Protocol):
+    #TODO use this class with timeout quant + tolerance and gather all the responses to print to UI
+    def __init__(self, loop, offer, index):
+        self.loop = loop
+        self.offer= offer
+        self.index = index
+        self.transport = None
+        self.conn_lost = loop.create_future()
+        self.offer_taker = self.offer.offer_takers[index]
+
+    def connection_made(self, transport):
+        message =  [self.offer.md5, self.offer.content, str(self.offer_taker.offset), str(self.offer_taker.limit)]
+        message = "|".join(message)
+        message = message.encode('utf_8')
+        transport.write(message)
+
+    def connection_lost(self, exc):
+        self.conn_lost.set_result(True)
+
+    def data_received(self, data, addr):
+        if addr[0]==SELF_IP:
+            return
+        status, ip, time_quant = data.split("|")
+        if status == "BUSY":
+            return
+        elif status == "OK":
+            self.offer.offer_takers.append(OfferMaker(ip,time_quant))
