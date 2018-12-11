@@ -1,6 +1,6 @@
 import os
 import socket
-from config import DISCOVERY_PORT
+from config import DISCOVERY_PORT, MESSAGE_TIMEOUT
 
 
 def execute_script(script, offset, limit):
@@ -16,7 +16,7 @@ def probe_for_resources(ip):
     server.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     server.settimeout(1)
     server.bind(("",DISCOVERY_PORT))
-    server.sendto("PROBE|"+ip,('<broadcast>',DISCOVERY_PORT))
+    server.sendto(("PROBE|"+ip).encode('utf_8'),('<broadcast>',DISCOVERY_PORT))
     server.close()
 
 def send_disconnect_message(ip):
@@ -24,6 +24,22 @@ def send_disconnect_message(ip):
     server.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     server.settimeout(1)
     server.bind(("", DISCOVERY_PORT))
-    server.sendto("DISCONNECTED|" + ip, ('<broadcast>', DISCOVERY_PORT))
+    server.sendto(("PROBE|"+ip).encode('utf_8'), ('<broadcast>', DISCOVERY_PORT))
     server.close()
+
+def send_probe_response(self_ip, receiver_ip, quant):
+    msg = "HERE|"
+    msg += self_ip + "|" + str(quant)
+    msg = msg.encode('utf_8')
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        try:
+            server.settimeout(MESSAGE_TIMEOUT)
+            server.connect((receiver_ip, DISCOVERY_PORT))
+            server.sendall(msg)
+        except Exception as ex:
+            print("Error occured while sending the discovery response", ex)
+            return
+        finally:
+            server.close()
+
 
