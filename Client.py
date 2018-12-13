@@ -84,7 +84,6 @@ class Client:
     def __init__(self):
         self.loop = asyncio.get_running_loop()
         self.available_servers = {}
-        self.loop = None
         self.offer = None
 
     def start_probe_listener(self):
@@ -103,7 +102,6 @@ class Client:
         asyncio.run(self.start_offer_broadcast(filename, required_quant, num_operations))
 
     async def start_offer_broadcast(self, filename, required_quant, num_operations):
-        self.loop = asyncio.get_event_loop()
         self.offer = Offer(filename, required_quant)
         promises = []
         for ip, offer_maker in self.available_servers:

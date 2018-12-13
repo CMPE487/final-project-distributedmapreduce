@@ -31,7 +31,7 @@ def send_probe_response(self_ip, receiver_ip, quant):
     msg = "HERE|"
     msg += self_ip + "|" + str(quant)
     msg = msg.encode('utf_8')
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as server:
         try:
             server.settimeout(MESSAGE_TIMEOUT)
             server.connect((receiver_ip, DISCOVERY_PORT))
