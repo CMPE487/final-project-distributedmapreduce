@@ -16,7 +16,7 @@ def get_ip():
 SELF_IP = get_ip()
 DISCOVERY_PORT = 5000  #UDP
 OFFER_PORT = 5001 #TCP
-DELIVERY_PORT = 5002  #TCP
+DELIVERY_PORT = 5001  #TCP
 OFFER_TIMEOUT= 5  #Seconds
 MESSAGE_TIMEOUT = 2  #Seconds
 SCRIPT_DELAY_TOLERANCE = 6 #Seconds excess time permitted for the servers script execution
