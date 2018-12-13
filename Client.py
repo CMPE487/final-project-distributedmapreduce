@@ -5,8 +5,13 @@ import random
 import threading
 import hashlib
 import select
+import sys
 from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT
 import math
+
+from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QDialog, \
+    QGroupBox, QGridLayout, QVBoxLayout, QComboBox, QLabel
+from PyQt5.QtCore import pyqtSlot
 
 class OfferMaker:
     def __init__(self,ip,quant):
@@ -187,3 +192,53 @@ class OfferScriptProtocol(asyncio.Protocol):
             return
         elif status == "OK":
             self.offer.offer_takers.append(OfferMaker(ip,time_quant))
+
+
+class App(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.title = "Super final project"
+        self.left = 10
+        self.top = 10
+        self.width = 320
+        self.height = 100
+        # self.userList = online_users()
+        # self.selected_user = None
+        # self.init_combo()
+        self.initUI()
+        self.last_notif = None
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.createGridLayout()
+        windowLayout = QVBoxLayout()
+        windowLayout.addWidget(self.horizontalGroupBox)
+        self.setLayout(windowLayout)
+        self.show()
+
+    def createGridLayout(self):
+        self.horizontalGroupBox = QGroupBox("Distributed Map Reduce")
+        self.layout = QGridLayout()
+        self.layout.setColumnStretch(0, 10)
+        self.layout.setColumnStretch(1, 10)
+        self.layout.setColumnStretch(2,10)
+        self.notif_box = QLineEdit(self)
+        refresh_button = QPushButton('Refresh Server List')
+        # refresh_button.clicked.connect(self.on_refresh)
+        select_button = QPushButton('Select a file')
+        # open_button.clicked.connect(self.on_start)
+        self.layout.addWidget(refresh_button, 0, 0)
+        self.layout.addWidget(select_button,0,1)
+        self.layout.addWidget(self.notif_box, 0, 2)
+        self.notif_box.setText("No New Notifications")
+        self.notif_box.setDisabled(True)
+        # self.layout.addWidget(self.combo, 0, 0)
+        # self.layout.addWidget(open_button, 1, 1)
+        self.horizontalGroupBox.setLayout(self.layout)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = App()
+    sys.exit(app.exec_())
