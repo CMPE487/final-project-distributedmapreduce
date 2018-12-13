@@ -11,6 +11,7 @@ import math
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QDialog, \
     QGroupBox, QGridLayout, QVBoxLayout, QComboBox, QLabel
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
 
 class OfferMaker:
@@ -112,6 +113,7 @@ class Client:
             self.send_script()
         else:
             #TODO Display error in UI
+            error_dialog.showMessage('Error comes here')
             self.offer = None
             return
 
@@ -206,6 +208,7 @@ class App(QDialog):
         # self.selected_user = None
         # self.init_combo()
         self.initUI()
+        error_dialog.showMessage("Error veriyomuş babuşka")
         self.last_notif = None
 
     def initUI(self):
@@ -240,5 +243,6 @@ class App(QDialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    error_dialog = QtWidgets.QErrorMessage()
     ex = App()
     sys.exit(app.exec_())
