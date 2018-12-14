@@ -1,14 +1,16 @@
 import os
 import socket
-from config import DISCOVERY_PORT, MESSAGE_TIMEOUT
+from string import Template
+from config import DISCOVERY_PORT, MESSAGE_TIMEOUT, SERVER_WAIT_FOR_SCRIPT_TOLERANCE
 
 
-def execute_script(script, offset, limit):
+def execute_script(task, quant):
     file = open("register.py",'wb')
     file.truncate(0)
-    file.write(script)
+    file.write(task.script)
     file.close()
-    results = os.popen("python3 register.py " + offset + " " + limit).read().split("\n")
+    command = Template("timeout $quant python3 register.py $offset $limit").substitute(quant = str(quant), offset = str(task.offset), limit = str(task.limit))
+    results = os.popen(command).read()
     return results
 
 def probe_for_resources(ip):

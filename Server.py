@@ -11,10 +11,12 @@ class Task:
         self.script = None
         self.limit = None
         self.offset = None
+        self.result = None
 
-    def execute(self):
-        results = execute_script(self.script, self.offset, self.limit)
-        return results
+    def get_result_message(self):
+        message = "|".join([self.hash, self.result, self.offset, self.limit])
+        return message.encode('utf_8')
+
 
 class Server:
     def __init__(self):
@@ -28,11 +30,15 @@ class Server:
     def set_busy(self):
         self.busy = True
 
-    def set_available(self):
+    def timeout_after_offer(self):
         if self.task is not None:
             if self.task.script is not None:
                 return
         self.busy = False
+
+    def timeout_after_execution(self):
+        self.busy = False
+        self.task = None
 
     def start_discovery_handler(self):
         disc_thread = DiscoveryHandler(self.send_probe_response)
@@ -63,27 +69,34 @@ class OfferTakerProtocol(asyncio.Protocol):
         self.transport = transport
 
     def data_received(self, data):
-
         self.server.lock.acquire()
-        if len(data.decode('|')) == 2:
-            try:
+        try:
+            if len(data.decode('utf_8').split("|")) == 2:
                 msg = ""
                 if self.server.busy:
                     msg += "BUSY"
                 else:
                     msg += "OK"
                     self.server.set_busy()
-                    self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE,self.server.set_available)
-                    #TODO Create empty task with the hast get from data decode
-                self.transport.write("OK|" + SELF_IP +"|" + str(self.server.quant))
+                    self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE,self.server.timeout_after_offer)
+                    self.server.task = Task(data.decode('utf_8').split("|")[1])
+                self.transport.write(("OK|" + SELF_IP +"|" + str(self.server.quant)).encode('utf_8'))
                 self.transport.close()
-            except Exception as ex:
-                print("Error occured while sending offer response client: " + str(ex))
-            finally:
-                self.server.lock.release()
-        else:
-            self.server.lock()
-            #TODO execution logic
+            else:
+                if self.server.task is None:
+                    return
+                self.loop.call_later(self.server.quant + SERVER_WAIT_FOR_SCRIPT_TOLERANCE, self.server.timeout_after_execution)
+                _, self.server.task.script, self.server.task.offset, self.server.task.limit = data.decode('utf_8').split("|")
+                self.server.task.result = execute_script(self.server.task, self.server.quant)
+                message = self.server.task.get_result_message()
+                self.transport.write(message)
+                self.server.task = None
+                self.transport.close()
+
+        except Exception as ex:
+            print("Exception occured during data receive on Server: " + str(ex))
+        finally:
+            self.server.lock.release()
 
 
 class DiscoveryHandler(threading.Thread):
