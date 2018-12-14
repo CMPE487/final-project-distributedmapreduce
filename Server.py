@@ -1,7 +1,7 @@
 import asyncio
 import socket
 import threading
-from config import DISCOVERY_PORT, DELIVERY_PORT, SELF_IP, OFFER_TIMEOUT, SERVER_WAIT_FOR_SCRIPT_TOLERANCE, MESSAGE_TIMEOUT
+from config import DISCOVERY_PORT, DELIVERY_PORT, SELF_IP, OFFER_TIMEOUT, SERVER_WAIT_FOR_SCRIPT_TOLERANCE, MESSAGE_TIMEOUT, OFFER_PORT
 from handlers import execute_script, send_probe_response
 import select
 
@@ -21,7 +21,7 @@ class Task:
 class Server:
     def __init__(self):
         self.busy = False
-        self.loop = asyncio.get_running_loop()
+        self.loop = asyncio.new_event_loop()
         self.task = None
         self.quant= None
         self.lock = threading.Lock()
@@ -60,10 +60,23 @@ class Server:
             finally:
                 server.close()
 
+    def serve(self):
+        t = threading.Thread(target = self.start_server)
+        t.setDaemon(True)
+        t.start()
+
+    async def start_server(self):
+        loop = asyncio.get_running_loop()
+        server = await loop.create_server(
+            lambda: OfferTakerProtocol(self),
+            SELF_IP, OFFER_PORT)
+        async with server:
+            await server.serve_forever()
+
 class OfferTakerProtocol(asyncio.Protocol):
-    def __init__(self, server,loop):
+    def __init__(self, server):
         self.server = server
-        self.loop = loop
+        self.loop = server.loop
 
     def connection_made(self, transport):
         self.transport = transport
@@ -74,14 +87,13 @@ class OfferTakerProtocol(asyncio.Protocol):
             if len(data.decode('utf_8').split("|")) == 2:
                 msg = ""
                 if self.server.busy:
-                    msg += "BUSY"
+                    msg += "BUSY|"
                 else:
-                    msg += "OK"
+                    msg += "OK|"
                     self.server.set_busy()
                     self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE,self.server.timeout_after_offer)
                     self.server.task = Task(data.decode('utf_8').split("|")[1])
-                self.transport.write(("OK|" + SELF_IP +"|" + str(self.server.quant)).encode('utf_8'))
-                self.transport.close()
+                self.transport.write((msg + SELF_IP +"|" + str(self.server.quant)).encode('utf_8'))
             else:
                 if self.server.task is None:
                     return
@@ -91,7 +103,6 @@ class OfferTakerProtocol(asyncio.Protocol):
                 message = self.server.task.get_result_message()
                 self.transport.write(message)
                 self.server.task = None
-                self.transport.close()
 
         except Exception as ex:
             print("Exception occured during data receive on Server: " + str(ex))
@@ -115,3 +126,7 @@ class DiscoveryHandler(threading.Thread):
             msg = msg.decode('utf_8')
             probe,received_from = msg.split('|')
             self.discovery_cb(received_from)
+
+s = Server()
+s.start_discovery_handler()
+s.serve()
