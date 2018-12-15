@@ -7,6 +7,7 @@ import hashlib
 import select
 import sys
 from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT
+from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT, SCRIPT_DELAY_TOLERANCE
 import math
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QDialog, \
@@ -20,7 +21,7 @@ class OfferMaker:
         self.quant = quant
         self.limit = None
         self.offset = None
-        self.response = None
+        self.result = None
 
 class Offer:
     def __init__(self, filename, required_quant, num_operations):
@@ -51,6 +52,17 @@ class Offer:
         else:
             return False
 
+    def get_results(self):
+        success = True
+        results = ""
+        for taker in self.offer_takers:
+            if taker.result is not None:
+                results += taker.result
+            else:
+                results += "Error occured in offset: " + str(taker.offset) + " and limit: " + str(taker.limit)
+                success = False
+        return success,results
+
     def get_script_content(self):
         script = open(self.filename, 'rb')
         try:
@@ -79,7 +91,6 @@ class Client:
     def __init__(self):
         self.loop = asyncio.get_running_loop()
         self.available_servers = {}
-        self.loop = None
         self.offer = None
 
     def start_probe_listener(self):
@@ -98,7 +109,6 @@ class Client:
         asyncio.run(self.start_offer_broadcast(filename, required_quant, num_operations))
 
     async def start_offer_broadcast(self, filename, required_quant, num_operations):
-        self.loop = asyncio.get_event_loop()
         self.offer = Offer(filename, required_quant)
         promises = []
         for ip, offer_maker in self.available_servers:
@@ -121,8 +131,17 @@ class Client:
         asyncio.run(self.start_script_protocol())
 
     async def start_script_protocol(self):
-        #Burada connectionları aç
-        await asyncio.sleep(1)
+        promises = []
+        for offer_maker in self.offer.offer_takers:
+            server = OfferScriptProtocol(self.loop, self.offer, offer_maker)
+            _, _ = await self.loop.create_connection(
+                lambda: server, offer_maker.ip, OFFER_PORT)
+            promises.append(server.conn_lost)
+            self.loop.call_later(offer_maker.quant + SCRIPT_DELAY_TOLERANCE, server.connection_lost)
+        await asyncio.gather(*[promises])  # "Wait for all of the connections to return"
+        success, results = self.offer.get_results()
+        #TODO Print to UI with success and results parameters
+
 
 class OfferClientProtocol(asyncio.Protocol):
 
@@ -169,19 +188,22 @@ class DiscoveryListener(threading.Thread):
 
 class OfferScriptProtocol(asyncio.Protocol):
     #TODO use this class with timeout quant + tolerance and gather all the responses to print to UI
-    def __init__(self, loop, offer, index):
+    def __init__(self, loop, offer, offer_taker):
         self.loop = loop
         self.offer= offer
-        self.index = index
         self.transport = None
         self.conn_lost = loop.create_future()
-        self.offer_taker = self.offer.offer_takers[index]
+        self.offer_taker = offer_taker
 
     def connection_made(self, transport):
         message =  [self.offer.md5, self.offer.content, str(self.offer_taker.offset), str(self.offer_taker.limit)]
         message = "|".join(message)
         message = message.encode('utf_8')
-        transport.write(message)
+        try:
+            transport.write(message)
+        except Exception as ex:
+            print('Exception occured durin message send in script: '
+                  , str(ex))
 
     def connection_lost(self, exc):
         self.conn_lost.set_result(True)
@@ -246,3 +268,8 @@ if __name__ == '__main__':
     error_dialog = QtWidgets.QErrorMessage()
     ex = App()
     sys.exit(app.exec_())
+        hash,result,offset,limit = data.decode('utf_8').split('|')
+        if self.offer.md5 == hash and self.offer_taker.limit == limit and self.offer_taker.offset == offset:
+            print("Correct file received")
+        self.offer_taker.result = result
+        self.conn_lost.set_result(True)
