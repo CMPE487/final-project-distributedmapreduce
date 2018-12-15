@@ -10,10 +10,12 @@ from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT,
 from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT, SCRIPT_DELAY_TOLERANCE
 import math
 
+
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QDialog, \
     QGroupBox, QGridLayout, QVBoxLayout, QComboBox, QLabel
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSlot
+from utils import *
 
 class OfferMaker:
     def __init__(self,ip,quant):
