@@ -14,12 +14,11 @@ def execute_script(task, quant):
     return results
 
 def probe_for_resources(ip):
-    server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    server.settimeout(1)
-    server.bind(("",DISCOVERY_PORT))
-    server.sendto(("PROBE|"+ip).encode('utf_8'),('<broadcast>',DISCOVERY_PORT))
-    server.close()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(('', 0))
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.sendto(("PROBE|"+ip).encode('utf_8'),('<broadcast>',DISCOVERY_PORT))
+    sock.close()
 
 def send_disconnect_message(ip):
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)

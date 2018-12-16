@@ -4,6 +4,7 @@ import threading
 from config import DISCOVERY_PORT, DELIVERY_PORT, SELF_IP, OFFER_TIMEOUT, SERVER_WAIT_FOR_SCRIPT_TOLERANCE, MESSAGE_TIMEOUT, OFFER_PORT
 from handlers import execute_script, send_probe_response
 import select
+from utils import change_style
 
 class Task:
     def __init__(self, hash):
@@ -19,11 +20,11 @@ class Task:
 
 
 class Server:
-    def __init__(self):
+    def __init__(self,quant):
         self.busy = False
         self.loop = asyncio.new_event_loop()
         self.task = None
-        self.quant= None
+        self.quant= quant
         self.lock = threading.Lock()
         self.task = None
 
@@ -61,15 +62,17 @@ class Server:
                 server.close()
 
     def serve(self):
-        t = threading.Thread(target = self.start_server)
-        t.setDaemon(True)
-        t.start()
+        #t = threading.Thread(target = self.start_server)
+        #t.setDaemon(True)
+        #t.start()
+        asyncio.run(self.start_server())
 
     async def start_server(self):
         loop = asyncio.get_running_loop()
         server = await loop.create_server(
             lambda: OfferTakerProtocol(self),
             SELF_IP, OFFER_PORT)
+        print("Started Offer Server")
         async with server:
             await server.serve_forever()
 
@@ -94,6 +97,7 @@ class OfferTakerProtocol(asyncio.Protocol):
                     self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE,self.server.timeout_after_offer)
                     self.server.task = Task(data.decode('utf_8').split("|")[1])
                 self.transport.write((msg + SELF_IP +"|" + str(self.server.quant)).encode('utf_8'))
+                self.transport.close()
             else:
                 if self.server.task is None:
                     return
@@ -103,6 +107,7 @@ class OfferTakerProtocol(asyncio.Protocol):
                 message = self.server.task.get_result_message()
                 self.transport.write(message)
                 self.server.task = None
+                self.transport.close()
 
         except Exception as ex:
             print("Exception occured during data receive on Server: " + str(ex))
@@ -124,9 +129,14 @@ class DiscoveryHandler(threading.Thread):
             result = select.select([self.discovery_socket], [], [])
             msg = result[0][0].recv(1024)
             msg = msg.decode('utf_8')
+            if len(msg.split('|')) > 2:
+                continue
             probe,received_from = msg.split('|')
+            print("Received discovery request from:" + received_from)
             self.discovery_cb(received_from)
 
-s = Server()
+
+capacity = input("\n" + change_style("Enter the number of seconds that this server should spend for each execution", 'underline') + ": ")
+s = Server(int(capacity))
 s.start_discovery_handler()
 s.serve()
