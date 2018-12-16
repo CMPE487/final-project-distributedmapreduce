@@ -1,2 +1,3 @@
 testServer.py
 testClient.py
+__pycache__/

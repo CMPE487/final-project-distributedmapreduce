@@ -1,21 +1,13 @@
 import asyncio
 import socket
-from string import ascii_letters
-import random
 import threading
 import hashlib
 import select
-import sys
-from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT
 from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT, SCRIPT_DELAY_TOLERANCE
 import math
 
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QMessageBox, QDialog, \
-    QGroupBox, QGridLayout, QVBoxLayout, QComboBox, QLabel
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSlot
-from utils import *
+
 
 class OfferMaker:
     def __init__(self,ip,quant):
@@ -125,7 +117,6 @@ class Client:
             self.send_script()
         else:
             #TODO Display error in UI
-            error_dialog.showMessage('Error comes here')
             self.offer = None
             return
 
