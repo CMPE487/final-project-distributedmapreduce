@@ -5,7 +5,7 @@ import hashlib
 import select
 from config import DISCOVERY_PORT,DELIVERY_PORT, SELF_IP, SUBNET, OFFER_TIMEOUT, OFFER_PORT, SCRIPT_DELAY_TOLERANCE
 from handlers import probe_for_resources
-from utils import print_notification
+from utils import print_notification, print_error
 import math
 
 class OfferMaker:
@@ -122,7 +122,7 @@ class Client:
             self.offer.set_distributions()
             await self.start_script_protocol()
         else:
-            #TODO Display error in UI
+            print_error("Script offer is currentşy not satisfiable!!")
             self.offer = None
             return
 

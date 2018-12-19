@@ -44,6 +44,12 @@ while True:
     elif option=="3":
         clear()
         print_header("Show results")
+        if c.offer is None:
+            print("No offer and results are present at this time\n")
+            print("Press Enter to continue\n")
+            input()
+            clear()
+            continue
         success, result = c.offer.get_results()
         if success:
             print(result)
