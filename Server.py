@@ -22,7 +22,7 @@ class Task:
 class Server:
     def __init__(self,quant):
         self.busy = False
-        self.loop = asyncio.new_event_loop()
+        self.loop = None
         self.task = None
         self.quant= quant
         self.lock = threading.Lock()
@@ -68,8 +68,8 @@ class Server:
         asyncio.run(self.start_server())
 
     async def start_server(self):
-        loop = asyncio.get_running_loop()
-        server = await loop.create_server(
+        self.loop = asyncio.get_running_loop()
+        server = await self.loop.create_server(
             lambda: OfferTakerProtocol(self),
             SELF_IP, OFFER_PORT)
         print("Started Offer Server")
@@ -94,7 +94,7 @@ class OfferTakerProtocol(asyncio.Protocol):
                 else:
                     msg += "OK|"
                     self.server.set_busy()
-                    self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE,self.server.timeout_after_offer)
+                    self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE, self.server.timeout_after_offer)
                     self.server.task = Task(data.decode('utf_8').split("|")[1])
                 msg = msg + SELF_IP + "|" + str(self.server.quant)
                 self.transport.write(msg.encode('utf_8'))
