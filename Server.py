@@ -96,7 +96,8 @@ class OfferTakerProtocol(asyncio.Protocol):
                     self.server.set_busy()
                     self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE,self.server.timeout_after_offer)
                     self.server.task = Task(data.decode('utf_8').split("|")[1])
-                self.transport.write((msg + SELF_IP +"|" + str(self.server.quant)).encode('utf_8'))
+                msg = msg + SELF_IP + "|" + str(self.server.quant)
+                self.transport.write(msg.encode('utf_8'))
                 self.transport.close()
             else:
                 if self.server.task is None:

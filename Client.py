@@ -74,7 +74,7 @@ class Offer:
         script = open(self.filename, 'rb')
         try:
             content = script.read()
-            return hashlib.md5(content).hexdigest()
+            return hashlib.md5(content.encode('utf_8')).hexdigest()
         except Exception as ex:
             print("Exception occured while reading script file. Info: " + str(ex))
             # TODO print in UI
@@ -204,7 +204,7 @@ class OfferScriptProtocol(asyncio.Protocol):
         try:
             transport.write(message)
         except Exception as ex:
-            print('Exception occured durin message send in script: '
+            print('Exception occured during message send in script: '
                   , str(ex))
 
     def connection_lost(self, exc):

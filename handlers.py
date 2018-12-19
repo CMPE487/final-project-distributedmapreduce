@@ -5,11 +5,13 @@ from config import DISCOVERY_PORT, MESSAGE_TIMEOUT, SERVER_WAIT_FOR_SCRIPT_TOLER
 
 
 def execute_script(task, quant):
-    file = open("register.py",'wb')
+    file = open("register.py",'w')
     file.truncate(0)
     file.write(task.script)
     file.close()
+    #Uncomment this line for linux
     command = Template("timeout $quant python3 register.py $offset $limit").substitute(quant = str(quant), offset = str(task.offset), limit = str(task.limit))
+    command = "python register.py"
     results = os.popen(command).read()
     return results
 
