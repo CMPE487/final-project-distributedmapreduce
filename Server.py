@@ -31,15 +31,20 @@ class Server:
     def set_busy(self):
         self.busy = True
 
-    def timeout_after_offer(self):
+    def timeout_after_offer(self, hash):
         if self.task is not None:
             if self.task.script is not None:
                 return
-        self.busy = False
+            if self.task.hash == hash:
+                self.busy = False
+                self.task = None
 
-    def timeout_after_execution(self):
-        self.busy = False
-        self.task = None
+    def timeout_after_execution(self, hash):
+        if self.task is None:
+            return
+        if self.task.hash == hash:
+            self.busy = False
+            self.task = None
 
     def start_discovery_handler(self):
         disc_thread = DiscoveryHandler(self.send_probe_response)
@@ -94,20 +99,23 @@ class OfferTakerProtocol(asyncio.Protocol):
                 else:
                     msg += "OK|"
                     self.server.set_busy()
-                    self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE, self.server.timeout_after_offer)
+                    self.loop.call_later(SERVER_WAIT_FOR_SCRIPT_TOLERANCE, self.server.timeout_after_offer,(hash,))
                     self.server.task = Task(data.decode('utf_8').split("|")[1])
                 msg = msg + SELF_IP + "|" + str(self.server.quant)
+                print("Received Script Offer")
                 self.transport.write(msg.encode('utf_8'))
                 self.transport.close()
             else:
                 if self.server.task is None:
                     return
-                self.loop.call_later(self.server.quant + SERVER_WAIT_FOR_SCRIPT_TOLERANCE, self.server.timeout_after_execution)
-                _, self.server.task.script, self.server.task.offset, self.server.task.limit = data.decode('utf_8').split("|")
+                print("Received Script Content")
+                self.loop.call_later(self.server.quant + SERVER_WAIT_FOR_SCRIPT_TOLERANCE, self.server.timeout_after_execution,(self.server.task.hash,))
+                self.server.task.hash, self.server.task.script, self.server.task.offset, self.server.task.limit = data.decode('utf_8').split("|")
                 self.server.task.result = execute_script(self.server.task, self.server.quant)
                 message = self.server.task.get_result_message()
                 self.transport.write(message)
                 self.server.task = None
+                self.server.busy = False
                 self.transport.close()
 
         except Exception as ex:

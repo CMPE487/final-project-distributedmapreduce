@@ -11,7 +11,7 @@ def execute_script(task, quant):
     file.close()
     #Uncomment this line for linux
     command = Template("timeout $quant python3 register.py $offset $limit").substitute(quant = str(quant), offset = str(task.offset), limit = str(task.limit))
-    command = "python register.py 5 5"
+    command = "python register.py 5 15"
     results = os.popen(command).read()
     return results
 
