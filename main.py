@@ -35,6 +35,8 @@ while True:
         filepath = input("\n" + change_style("Enter absolute file path", 'underline') + ": ")
         number_of_ops = input("\n" + change_style("How many operations are there in file?", 'underline') + ": ")
         duration = input("\n" + change_style("How many seconds do these take?", 'underline') + ": ")
+        clear()
+        print("Waiting for the script offer to complete")
         c.broadcast_script_offer(filepath, int(duration), int(number_of_ops))
         print("Script offer sent")
         input("Press enter to continue")
@@ -42,6 +44,14 @@ while True:
     elif option=="3":
         clear()
         print_header("Show results")
+        success, result = c.offer.get_results()
+        if success:
+            print(result)
+        else:
+            print("Could not complete operation successfully")
+        print("\nPress Enter to continue")
+        input()
+        clear()
 
     elif option == "4":
         clear()
@@ -50,6 +60,8 @@ while True:
             print(server)
         print("\nPress Enter to continue")
         input()
+        clear()
+
     elif option=="5":
         clear()
         print_notification("Good bye \n\n")

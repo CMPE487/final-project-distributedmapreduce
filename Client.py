@@ -74,7 +74,7 @@ class Offer:
         script = open(self.filename, 'rb')
         try:
             content = script.read()
-            return hashlib.md5(content.encode('utf_8')).hexdigest()
+            return hashlib.md5(content).hexdigest()
         except Exception as ex:
             print("Exception occured while reading script file. Info: " + str(ex))
             # TODO print in UI
@@ -139,6 +139,7 @@ class Client:
             promises.append(server.conn_lost)
             self.loop.call_later(offer_maker.quant + SCRIPT_DELAY_TOLERANCE, server.connection_lost)
         await asyncio.gather(*promises)  # "Wait for all of the connections to return"
+        print_notification("All components of script received")
         success, results = self.offer.get_results()
         #TODO Print to UI with success and results parameters
 
@@ -153,11 +154,13 @@ class OfferClientProtocol(asyncio.Protocol):
 
     def connection_made(self, transport):
         bcast_message =  ("PROBE|" + self.offer.md5 ).encode('utf_8')
-        print(bcast_message)
         transport.write(bcast_message)
 
     def connection_lost(self, exc):
-        self.conn_lost.set_result(True)
+        try:
+            self.conn_lost.set_result(True)
+        except:
+            pass
 
     def data_received(self, data):
         status, ip, time_quant = data.decode('utf_8').split("|")
@@ -208,12 +211,15 @@ class OfferScriptProtocol(asyncio.Protocol):
                   , str(ex))
 
     def connection_lost(self, exc):
-        self.conn_lost.set_result(True)
+        try:
+            self.conn_lost.set_result(True)
+        except:
+            pass
 
     def data_received(self, data):
         hash,result,offset,limit = data.decode('utf_8').split('|')
-        print(result)
         if self.offer.md5 == hash and self.offer_taker.limit == limit and self.offer_taker.offset == offset:
             print("Correct file received")
+            print_notification("Received script results from" + self.offer_taker.ip)
         self.offer_taker.result = result
         self.conn_lost.set_result(True)
