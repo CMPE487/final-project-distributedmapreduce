@@ -10,6 +10,7 @@ def execute_script(task, quant):
     file.write(task.script)
     file.close()
     #Uncomment this line for linux
+    print("Executing the script with Offset: "+str(task.offset)+" Limit: "+str(task.limit))
     command = Template("timeout $quant python3 register.py $offset $limit").substitute(quant = str(quant), offset = str(task.offset), limit = str(task.limit))
     results = os.popen(command).read()
     return results
