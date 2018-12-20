@@ -51,6 +51,8 @@ while True:
             clear()
             continue
         success, result = c.offer.get_results()
+        print(c.offer.get_offsets())
+
         if success:
             print(result)
         else:

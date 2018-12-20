@@ -58,6 +58,14 @@ class Offer:
                 success = False
         return success,results
 
+    def get_offsets(self):
+        offset_list = [taker.offset for taker in self.offer_takers]
+        return offset_list
+
+    def get_limits(self):
+        offset_list = [taker.offset for taker in self.offer_takers]
+        return offset_list
+
     def get_script_content(self):
         script = open(self.filename, 'r')
         try:
