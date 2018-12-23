@@ -1,6 +1,6 @@
 # Distributed Map Reduce
 
-###Contributors  
+### Contributors  
 - [M. Hakan Kurtoğlu](https://github.com/memhak)  
 - [A. Emirhan Karagül](https://github.com/emir350z)
 - Special Thanks to [Enes Çakır](https://github.com/EnesCakir) as we used the command line interface skeleton from the [project](https://github.com/CMPE487/torrent-chat-emir350z) we have implemented together
@@ -25,6 +25,7 @@ If you are using this program on mac you should install coreutils to use gtimeou
 - You can find an example script (example_script.py) for using distributed map reduce with its required syntax.
 
 ### Project Definition
+![Flow](https://github.com/CMPE487/final-project-distributedmapreduce/blob/master/report/flow.png?raw=true)
 - Constants are defined in thefile config.py
 - Servers have 2 connection handlers. 1 for discovery requests on UDP and 1 on script offer and script content transmission on TCP.
 - Servers wait for script offers and respond positively if they are not busy, after they respond they lock theirselves for a time interval defined in the config, if they do not receive the script content they release theirselves and become available again.
