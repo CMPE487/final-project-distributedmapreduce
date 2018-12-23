@@ -1,4 +1,15 @@
 import os
+import platform
+
+def get_platform():
+    if "darwin" in platform.system().lower():
+        return "mac"
+    elif "windows" in platform.system().lower():
+        return "windows"
+    else:
+        return "linux"
+
+PLATFORM = get_platform()
 
 def clear():
     os.system('clear')

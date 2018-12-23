@@ -6,16 +6,22 @@
 - Special Thanks to [Enes Çakır](https://github.com/EnesCakir) as we used the command line interface skeleton from the [project](https://github.com/CMPE487/torrent-chat-emir350z) we have implemented together
 
 ### Execution
+Before you run make sure that you are using python version 3.7,  
+To install the requirements type   
+`pip3 install -r requirements.txt` into your shell.  
 If you want to offer your pc as a resource to the network run:  
 `python3 Server.py` and proceed with the instructions that are prompted. 
 Else if you want to use the networks resources run:  
-`python3 main.py` and proceed with the prompted instructions in the program.
+`python3 main.py` and proceed with the prompted instructions in the program.  
+If you are using this program on mac you should install coreutils to use gtimeout by the following command in your shell:  
+`brew install coreutils`
 
 ### Disclaimer  
 - Virtual Enironment dependencies are under requirements.txt .
 - Need to have Python 3.7 to use the latest modules of asyncio and to run this project.
 - Need to have a Linux environment for using the timeout command in Server.py 
 - Good news for Windows users! It also works on Ubuntu Subsystem on Windows. :) 
+- Mac environment is also supported by the installation of coreutils. (It's not tested)
 - You can find an example script (example_script.py) for using distributed map reduce with its required syntax.
 
 ### Project Definition
